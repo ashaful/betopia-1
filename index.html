@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bootstrap 4 DatePicker</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <script src="https://unpkg.com/gijgo@1.9.14/js/gijgo.min.js" type="text/javascript"></script>
+    <link href="https://unpkg.com/gijgo@1.9.14/css/gijgo.min.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div class="container">
+        Start Date: <input id="startDate" width="276" />
+        End Date: <input id="endDate" width="276" />
+    </div>
+    <script>
+        // Initialize Gijgo DatePickers
+        var today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+        $('#startDate').datepicker({
+            uiLibrary: 'bootstrap4',
+            iconsLibrary: 'fontawesome',
+            minDate: today,
+            maxDate: function () {
+                return $('#endDate').val();
+            }
+        });
+        $('#endDate').datepicker({
+            uiLibrary: 'bootstrap4',
+            iconsLibrary: 'fontawesome',
+            minDate: function () {
+                return $('#startDate').val();
+            }
+        });
+
+        // --- Logic to handle URL parameters for pre-filling ---
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+
+        const startDateParam = urlParams.get('start_date');
+        const endDateParam = urlParams.get('end_date');
+
+        if (startDateParam) {
+            $('#startDate').val(startDateParam);
+        }
+        if (endDateParam) {
+            $('#endDate').val(endDateParam);
+        }
+
+        // --- New Logic: Handle Enter key press to update URL parameters ---
+
+        function updateUrlParams() {
+            const currentStartDate = $('#startDate').val();
+            const currentEndDate = $('#endDate').val();
+
+            const baseUrl = window.location.origin + window.location.pathname;
+
+            const newUrlParams = new URLSearchParams();
+            if (currentStartDate) {
+                newUrlParams.set('start_date', currentStartDate);
+            }
+            if (currentEndDate) {
+                newUrlParams.set('end_date', currentEndDate);
+            }
+
+            const newUrl = baseUrl + '?' + newUrlParams.toString();
+
+            // Navigate to the new URL, triggering a page reload with updated parameters
+            window.location.href = newUrl;
+        }
+
+        // Attach keyup event listeners to both date input fields
+        $('#startDate, #endDate').on('keyup', function(event) {
+            // Check if the Enter key (key code 13) was pressed
+            if (event.keyCode === 13) {
+                updateUrlParams();
+            }
+        });
+
+        // --- IMPORTANT: Removed the 'change' event listener here. ---
+        // This ensures the URL is only updated when Enter is pressed,
+        // or if you manually trigger `updateUrlParams()` from elsewhere.
+
+    </script>
+</body>
+</html>
