@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Date Range Picker</title>
+    <title>Date Range Selector with Dropdowns & Auto-Update</title>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
     <style>
         body {
             color: #000;
@@ -20,6 +22,7 @@
 
         label {
             font-size: 18px;
+            margin-right: 10px;
         }
 
         input {
@@ -46,11 +49,10 @@
         .daterangepicker {
             background-color: #fff;
             border-radius: 0 !important;
-            align-content: center !important;
             padding: 0 !important;
         }
 
-        /*Weekday Heading*/
+        /* Weekday Heading */
         thead tr:nth-child(2) {
             color: #BDBDBD !important;
         }
@@ -83,93 +85,185 @@
         }
 
         .drp-buttons {
-            display: none !important; /* Keep this if you don't want the "Apply" and "Cancel" buttons */
+            display: none !important;
+        }
+
+        /* Added for displaying messages */
+        #response-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #e0e0e0;
+            display: none;
+            word-wrap: break-word;
+        }
+        #response-message.alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-color: #bee5eb;
+        }
+        #response-message.alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        #response-message.alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        #response-message.alert-warning { /* Added for invalid date format warnings */
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
         }
     </style>
 </head>
 <body>
+
     <div class="container px-1 px-sm-5 mx-auto">
         <form autocomplete="off" id="dateForm">
             <div class="flex-row d-flex justify-content-center">
                 <div class="col-xl-5 col-lg-6 col-11 px-1">
                     <div class="input-group input-daterange">
-                        <label class="">Select Date Range :</label>
-                        <input type="text" name="daterange" value="01/01/2018 - 01/15/2018" readonly />
+                        <label class="d-block mb-2">Select Date Range :</label>
+                        <input type="text" name="daterange" value="01/01/2020 - 17/01/2020" />
                     </div>
                 </div>
             </div>
+            <div id="response-message"></div>
         </form>
     </div>
 
     <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script type="text/javascript" src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
 
     <script>
         $(document).ready(function(){
-            $('input[name="daterange"]').daterangepicker({
+            const dateRangeInput = $('input[name="daterange"]');
+            const responseMessageDiv = $('#response-message');
+
+            dateRangeInput.daterangepicker({
                 "startDate": "01/01/2020",
                 "endDate": "17/01/2020",
-                opens: 'center',
+                opens: 'left',
+                drops: 'down',
+                showDropdowns: true, // Enables month and year dropdowns
+                minYear: 1901,
+                maxYear: parseInt(moment().format('YYYY'),10) + 10,
                 locale: {
                     format: 'DD/MM/YYYY'
                 }
-            }, function(start, end, label) {
-                // This callback function is executed when a date range is applied.
-                // We don't necessarily need it for the "Enter" key, but it's good practice.
-                console.log("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
             });
 
-            // Listen for the 'apply.daterangepicker' event
-            $('input[name="daterange"]').on('apply.daterangepicker', function(ev, picker) {
-                // When a date is selected (and "Apply" is effectively pressed),
-                // we can trigger a form submission or an AJAX call.
+            // Function to send data via AJAX
+            function sendDateRangeToBackend() {
+                const selectedDateRangeString = dateRangeInput.val();
+                const picker = dateRangeInput.data('daterangepicker');
+                let startDateFormatted = '';
+                let endDateFormatted = '';
 
-                // Option 1: Submit the form (if you have a server-side endpoint configured)
-                $('#dateForm').submit();
+                // Try to get dates from the picker object if available and valid
+                if (picker && picker.startDate && picker.endDate && picker.startDate.isValid() && picker.endDate.isValid()) {
+                    startDateFormatted = picker.startDate.format('YYYY-MM-DD');
+                    endDateFormatted = picker.endDate.format('YYYY-MM-DD');
+                } else {
+                    // Fallback for manual typing: try to parse the string strictly
+                    const dates = selectedDateRangeString.split(' - ');
+                    if (dates.length === 2) {
+                        const startMoment = moment(dates[0], 'DD/MM/YYYY', true); // `true` for strict parsing
+                        const endMoment = moment(dates[1], 'DD/MM/YYYY', true);
 
-                // Option 2: Make an AJAX call (more common for dynamic updates)
-                /*
-                const startDate = picker.startDate.format('YYYY-MM-DD');
-                const endDate = picker.endDate.format('YYYY-MM-DD');
+                        if (startMoment.isValid() && endMoment.isValid()) {
+                            startDateFormatted = startMoment.format('YYYY-MM-DD');
+                            endDateFormatted = endMoment.format('YYYY-MM-DD');
+                        } else {
+                            responseMessageDiv.removeClass().addClass('alert alert-warning').html('Warning: Manually entered date format is invalid. Please use DD/MM/YYYY - DD/MM/YYYY.').show();
+                            startDateFormatted = ''; // Send empty or default if invalid
+                            endDateFormatted = '';
+                        }
+                    } else {
+                        responseMessageDiv.removeClass().addClass('alert alert-warning').html('Warning: Please enter date range in "DD/MM/YYYY - DD/MM/YYYY" format.').show();
+                        startDateFormatted = ''; // Send empty or default if invalid
+                        endDateFormatted = '';
+                    }
+                }
 
-                // Replace '/your-endpoint' with your actual API endpoint
+                responseMessageDiv.removeClass().addClass('alert alert-info').html('Sending data...').show();
+
+                // --- Replace this with your actual backend endpoint ---
+                const backendEndpoint = 'http://localhost:5000/process_dates'; // Example: Python Flask endpoint
+
                 $.ajax({
-                    url: '/your-endpoint',
-                    method: 'GET', // or 'POST', depending on your API
+                    url: backendEndpoint,
+                    method: 'GET', // Or 'POST'
                     data: {
-                        startDate: startDate,
-                        endDate: endDate
+                        full_range: selectedDateRangeString,
+                        start_date: startDateFormatted,
+                        end_date: endDateFormatted
                     },
                     success: function(response) {
-                        console.log('Successfully hit the endpoint:', response);
-                        // Handle success, e.g., update a div with results
+                        console.log('Successfully received response:', response);
+                        responseMessageDiv.removeClass().addClass('alert alert-success').html('Data sent successfully! Response: <pre>' + JSON.stringify(response, null, 2) + '</pre>').show();
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
-                        console.error('Error hitting the endpoint:', textStatus, errorThrown);
-                        // Handle errors
+                        console.error('Error sending data:', textStatus, errorThrown, jqXHR.responseText);
+                        responseMessageDiv.removeClass().addClass('alert alert-danger').html('Error sending data: ' + textStatus + '. Server said: ' + (jqXHR.responseText || 'No response')).show();
                     }
                 });
-                */
+            }
+
+            // Event listener for when a date range is applied (selected from picker grid or date presets)
+            dateRangeInput.on('apply.daterangepicker', function(ev, picker) {
+                // Update the input field with the newly selected range's format
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                sendDateRangeToBackend(); // Call the AJAX function
             });
 
-            // Listen for the 'keypress' event on the input field
-            $('input[name="daterange"]').on('keypress', function(e) {
-                if (e.which === 13) { // 13 is the key code for 'Enter'
-                    // Check if the daterangepicker is open. If it is, pressing Enter
-                    // might close it and then we want to trigger the action.
-                    // However, the 'apply.daterangepicker' event usually handles this
-                    // when the user is done selecting.
-                    // If you want to force an action *immediately* on Enter even if the
-                    // calendar is still open, you can do so here.
-                    // For the daterangepicker, the "apply" event is more reliable for
-                    // when a selection is finalized.
-                    console.log("Enter key pressed!");
-                    // If you don't use the 'apply.daterangepicker' event, you could put
-                    // the form submission or AJAX call logic directly here, but
-                    // it's generally better to rely on the library's events for
-                    // final selection.
+            // Handle Enter key press on the input field
+            dateRangeInput.on('keydown', function(e) {
+                if (e.which === 13) { // Key code for Enter
+                    e.preventDefault();
+
+                    const picker = $(this).data('daterangepicker');
+
+                    if (picker.isShowing) {
+                        // If picker is open, hide it. This will automatically trigger 'apply.daterangepicker'
+                        // (if valid dates are selected in the picker).
+                        // However, just in case, we'll explicitly update the input and then send.
+                        picker.hide();
+                        // Update input field immediately with picker's current range before sending
+                        $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                        sendDateRangeToBackend();
+                    } else {
+                        // If picker is NOT showing (user typed manually or previously selected),
+                        // directly send the data via AJAX.
+                        sendDateRangeToBackend();
+                    }
                 }
+            });
+
+            // Add an event listener for when the picker *changes month/year via dropdowns* or *navigates*
+            // This is crucial for updating the input field before apply.daterangepicker fires (which it won't on dropdown changes)
+            dateRangeInput.on('hide.daterangepicker', function(ev, picker) {
+                // This event fires when the picker hides, regardless of how.
+                // If dates were selected via the grid or dropdowns, update the input.
+                // It's safer to update the input field value before a potential sendDateRangeToBackend call
+                // especially if the user didn't click "apply" (which is hidden)
+                // or chose dates via dropdowns without clicking a final date.
+
+                // Only update if start/end dates are valid (meaning something was selected or is set)
+                if (picker.startDate.isValid() && picker.endDate.isValid()) {
+                    $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                }
+            });
+
+
+            // Prevent form submission if Enter is pressed on other elements
+            $('#dateForm').on('submit', function(e) {
+                e.preventDefault();
             });
         });
     </script>
