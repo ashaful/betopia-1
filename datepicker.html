@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Date Range Picker</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <style>
+        body {
+            color: #000;
+            overflow-x: hidden;
+            height: 100%;
+            background-color: #FFEE58 !important;
+            background-repeat: no-repeat;
+            padding: 0 !important;
+        }
+
+        .container {
+            padding-top: 120px;
+            padding-bottom: 120px;
+        }
+
+        label {
+            font-size: 18px;
+        }
+
+        input {
+            padding: 10px 15px !important;
+            border: 1px solid #CFD8DC !important;
+            border-radius: 4px !important;
+            box-sizing: border-box;
+            background-color: #fff !important;
+            color: #000 !important;
+            font-size: 16px !important;
+            letter-spacing: 1px;
+            position: relative;
+            width: 100%;
+        }
+
+        input:focus {
+            -moz-box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+            box-shadow: none !important;
+            border: 1px solid #FFA000 !important;
+            outline-width: 0;
+        }
+
+        .daterangepicker {
+            background-color: #fff;
+            border-radius: 0 !important;
+            align-content: center !important;
+            padding: 0 !important;
+        }
+
+        /*Weekday Heading*/
+        thead tr:nth-child(2) {
+            color: #BDBDBD !important;
+        }
+
+        tbody tr td {
+            padding: 5px 7px !important;
+        }
+
+        .month {
+            font-size: 16px !important;
+            padding-bottom: 10px !important;
+            padding-top: 10px !important;
+        }
+
+        .start-date, .end-date {
+            border-radius: 0px !important;
+        }
+
+        .available:hover {
+            border-radius: 0px !important;
+        }
+
+        .off {
+            color: #EEEEEE !important;
+        }
+
+        .off:hover {
+            background-color: #EEEEEE !important;
+            color: #fff !important;
+        }
+
+        .drp-buttons {
+            display: none !important; /* Keep this if you don't want the "Apply" and "Cancel" buttons */
+        }
+    </style>
+</head>
+<body>
+    <div class="container px-1 px-sm-5 mx-auto">
+        <form autocomplete="off" id="dateForm">
+            <div class="flex-row d-flex justify-content-center">
+                <div class="col-xl-5 col-lg-6 col-11 px-1">
+                    <div class="input-group input-daterange">
+                        <label class="">Select Date Range :</label>
+                        <input type="text" name="daterange" value="01/01/2018 - 01/15/2018" readonly />
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+
+    <script>
+        $(document).ready(function(){
+            $('input[name="daterange"]').daterangepicker({
+                "startDate": "01/01/2020",
+                "endDate": "17/01/2020",
+                opens: 'center',
+                locale: {
+                    format: 'DD/MM/YYYY'
+                }
+            }, function(start, end, label) {
+                // This callback function is executed when a date range is applied.
+                // We don't necessarily need it for the "Enter" key, but it's good practice.
+                console.log("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+            });
+
+            // Listen for the 'apply.daterangepicker' event
+            $('input[name="daterange"]').on('apply.daterangepicker', function(ev, picker) {
+                // When a date is selected (and "Apply" is effectively pressed),
+                // we can trigger a form submission or an AJAX call.
+
+                // Option 1: Submit the form (if you have a server-side endpoint configured)
+                $('#dateForm').submit();
+
+                // Option 2: Make an AJAX call (more common for dynamic updates)
+                /*
+                const startDate = picker.startDate.format('YYYY-MM-DD');
+                const endDate = picker.endDate.format('YYYY-MM-DD');
+
+                // Replace '/your-endpoint' with your actual API endpoint
+                $.ajax({
+                    url: '/your-endpoint',
+                    method: 'GET', // or 'POST', depending on your API
+                    data: {
+                        startDate: startDate,
+                        endDate: endDate
+                    },
+                    success: function(response) {
+                        console.log('Successfully hit the endpoint:', response);
+                        // Handle success, e.g., update a div with results
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('Error hitting the endpoint:', textStatus, errorThrown);
+                        // Handle errors
+                    }
+                });
+                */
+            });
+
+            // Listen for the 'keypress' event on the input field
+            $('input[name="daterange"]').on('keypress', function(e) {
+                if (e.which === 13) { // 13 is the key code for 'Enter'
+                    // Check if the daterangepicker is open. If it is, pressing Enter
+                    // might close it and then we want to trigger the action.
+                    // However, the 'apply.daterangepicker' event usually handles this
+                    // when the user is done selecting.
+                    // If you want to force an action *immediately* on Enter even if the
+                    // calendar is still open, you can do so here.
+                    // For the daterangepicker, the "apply" event is more reliable for
+                    // when a selection is finalized.
+                    console.log("Enter key pressed!");
+                    // If you don't use the 'apply.daterangepicker' event, you could put
+                    // the form submission or AJAX call logic directly here, but
+                    // it's generally better to rely on the library's events for
+                    // final selection.
+                }
+            });
+        });
+    </script>
+</body>
+</html>
